@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-from scipy.sparse import csc_matrix
-from scipy.optimize import approx_fprime
 
 
 # PARAMETRES
@@ -186,22 +184,6 @@ def Istim(I,t):
          return -15
      else:
          return 0
-"""
-
-def Istim(I,t):
-     if (t>=100 and t<=2800):
-         return I
-     else:
-         return 0
-
-def Istim(I,t):
-     if (t>=100 and t<=150):
-         return I
-     elif (t>=400 and t<=900):
-         return 5
-     else:
-         return 0
-"""
 
 g = np.vectorize(Istim)
 
@@ -287,16 +269,11 @@ Istim = np.arange(-2, 14, 4)
 
 y0 = np.array([V_0, mSHL1_0, hSHL1f_0, hSHL1s_0, mSHK1_0, hSHK1_0, mIRK_0, mEGL36f_0, mEGL36m_0, mEGL36s_0, mEGL19_0, hEGL19_0, mUNC2_0, hUNC2_0, mCCA1_0, hCCA1_0])
 
-
-#g_var=np.array([4.6,4,3.4,3.1,2.2,1,0.5,0.2])
-
 #TRACAGE POTENTIEL MEMBRANAIRE V
-#for g_CCA1 in g_var:
     
 for I in Istim: 
     yt = odeint(f, y0, t, args=(I,))
     plt.plot(t, yt[:,0], label=I)
-
 
 plt.xlabel(r"$t\;$(ms)",fontsize=20)
 plt.ylabel(r"$V(t)\;$(mV)",fontsize=20)
