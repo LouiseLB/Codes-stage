@@ -7,7 +7,7 @@ import sympy as sp
 import math
 
 x = np.array([-15,-10,-5,-2,0,2, 6, 10])
-y = np.array([-15,-10,-5,-2,0,2,227,419])
+y = np.array([-43,-10,-5,-2,0,2,227,419])
 
 
 # Interpolation par spline cubique
