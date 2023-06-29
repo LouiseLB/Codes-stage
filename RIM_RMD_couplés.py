@@ -2,40 +2,8 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-from scipy.interpolate import CubicSpline
 import sympy as sp
 from scipy.integrate import solve_ivp
-
-
-
-x = np.array([-15,-10,-5,-2,0,2, 6, 10])
-y = np.array([-15,-10,-5,-2,0,2,227,419])
-
-
-# Interpolation par spline cubique
-cs = CubicSpline(x, y)
-
-# Génération de nouveaux points pour l'interpolation
-x_new = np.linspace(-15, 10, 100)
-y_new = cs(x_new)
-
-# Création de symboles pour les variables
-x_sym = sp.symbols('x')
-
-# Affichage des données d'origine
-plt.plot(x, y, 'ro', label='Données d\'origine')
-
-# Affichage de l'interpolation par spline cubique
-plt.plot(x_new, y_new, label='Spline cubique')
-
-# Configurer le graphique
-plt.xlabel('x')
-plt.ylabel('y')
-plt.legend()
-#plt.show()
-plt.clf()
-
-
 
 # PARAMETRES POUR RIM
 
@@ -79,10 +47,8 @@ g_CCA1 = 3.1 #3.1
 g_NCa = 0.05 #0.05
 g_L_rmd = 0.3 #0.4
 
-
-
 ###
-# Tous les courants des modèles développés pour tester
+# Tous les courants des modèles
 ###
 
 #NEURONE RIM
@@ -365,144 +331,7 @@ y0 = np.array([V_0_rmd, mSHL1_0, hSHL1f_0, hSHL1s_0, mSHK1_0, hSHK1_0, mIRK_0, m
 Istim = np.arange(-10, 18, 4)
 t = np.arange(0, 3000, 0.5)
 
-""" 
-    for I in Istim: 
-        yt1 = odeint(f, y0, t, args=(I,))
-        plt.plot(t, yt1[:,0], label=I)
 
-    plt.xlabel(r"$t\;$(ms)",fontsize=20)
-    plt.ylabel(r"$V(t)\;$(mV)",fontsize=20)
-    plt.title('Neurone RMD',fontsize=35)
-    plt.tick_params(axis='x', which='major', labelsize=20)
-    plt.tick_params(axis='y', which='major', labelsize=20)
-    plt.legend()
-    plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
-    #plt.savefig(f'RMD g={g_}.png')
-    plt.show()
-    plt.clf()
-    """
-for g_L_rim in g_L_rim_var:   
-    for I in Istim: 
-        yt2 = odeint(f, y0, t, args=(I,))
-        plt.plot(t, yt2[:,16], label=I)    
-
-    plt.xlabel(r"$t\;$(ms)",fontsize=20)
-    plt.ylabel(r"$V(t)\;$(mV)",fontsize=20)
-    plt.title('Neurone RIM',fontsize=35)
-    plt.tick_params(axis='x', which='major', labelsize=20)
-    plt.tick_params(axis='y', which='major', labelsize=20)
-    plt.legend()
-    plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
-    plt.savefig(f'RIM_variation_gL+gL_RMD g={g_L_rim}.png')
-    #plt.show()
-    plt.clf()
-
-
-### (!) 
-### Pourquoi on perd en amplitude pour RMD avec les modèles complets de base (avec tous les courants) alors que la première équation (qui donne l'évolution de V pour RMD) est exactement la même que dans le modèle sans le couplage avec RIM?
-### Pourquoi le potentiel membranaire pour RIM devient encore plus négatif? J'ai l'impression que varier la conductance maximale de la synapse fait changer le tracé mais je ne trouve pas de valeur qui soit correcte
-
-
-
-tau=0.042
-
-y0_bis=-40
-E21=0
-
-
-#CONDUCTANCE SYNAPTIQUE
-
-def g_inf(g_,V):
-    return g_/(1+np.exp((0.5-V)/(10))) # mêmes remarques que plus haut + pour cette valeur de conductance maximale de la synapse (0.5), le potentiel membranaire de RMD redescend bien comme il doit le faire pendant le stimulus à -15pA alors que quand on trace le potentiel de RMD seul (sans couplage) on a pas cette diminution
-
-
-# COURANT SYNAPTIQUE 
-def I_c(g_,V1,V2):
-    return g_inf(g_,V1)*(V2-E21)
-
-
-
-#Protocole de stimulation (pour I>2, on utilise la régression trouvée précédemment pour retrouver l'amplitude correcte)
-def Istim_rmd(I,t):
-    if (t>=200 and t<=800):
-        #if I>2: 
-        #    return 64.10080302 * np.exp(I*0.20051913) - 43.917193932
-        #else:
-        return I
-    #elif (t>=600 and t<=800):
-    #    return cs(-15)
-    else:
-        return 0
-
-
-
-V_0= -70
-
-
-
-
-# Courant d'équilibre interpolé
-         
-def I_inf_tilde(V):
-    return 0.0018966222329156*V*V*V + 0.295010383983692*V*V + 14.3553046771257*V + 209.861871768762
-
-V_var = np.arange(-80,10,1)
-
-
-g=np.vectorize(Istim_rmd)     
-
-###
-# Simulation avec les modèles phénoménologiques
-###
-
-def f(t,y,I):
-   # dy = np.zeros((2,))
-
-    V_rmd =y[0]
-    V_rim =y[1]
-
-    dV_rmd= (1/C_rmd)*(g(I,t) - I_inf_tilde(V_rmd))#dV_rmd/dt
-    dV_rim = (1/tau)*( -0.000024*V_rim*V_rim*V_rim - 0.0036*V_rim*V_rim - 0.31*V_rim - 7.22 - I_c(0.4,V_rmd,V_rim)) #dV_rim/dt
-    #dy[1] = (1/tau)*( -0.000024*V_rim*V_rim*V_rim - 0.0036*V_rim*V_rim - 0.31*V_rim - 7.22)
-    return [dV_rmd, dV_rim]
-
-y0=[-70,-40]
-
-Istim = np.arange(-10, 18, 4)
-#t = np.arange(0, 2000, 0.5)
-g_var=np.arange(0.1,2.1,0.1)
-
-method = 'RK45'  # Méthode de résolution (Runge-Kutta d'ordre 5(4))
-atol = 1e-8     # Tolérance absolue
-rtol = 1e-6     # Tolérance relative
-
-t_span = (0, 1000)
-
-# Résolution de l'EDO avec RK4
-for I in Istim: 
-    solution = solve_ivp(f, t_span, y0, t_eval=np.linspace(t_span[0], t_span[1], 10000),args=(I,),method=method, atol=atol, rtol=rtol)
-    plt.plot(solution.t, solution.y[0], label='y1')
-# Tracer les solutions
-#plt.plot(solution.t, solution.y[1], label='y2')
-plt.xlabel('t')
-plt.ylabel('y')
-plt.title('Solutions du système d\'EDO')
-plt.legend()
-plt.show()
-plt.clf()
-
-for I in Istim: 
-    solution = solve_ivp(f, t_span, y0, t_eval=np.linspace(t_span[0], t_span[1], 100000),args=(I,),method=method, atol=atol, rtol=rtol)
-    plt.plot(solution.t, solution.y[1], label='y2')
-plt.xlabel('t')
-plt.ylabel('y')
-plt.title('Solutions du système d\'EDO')
-plt.legend()
-plt.show()
-
-"""
-#for g_ in g_var:
-    #Tracer et afficher le potentiel membranaire de RMD
 for I in Istim: 
     yt1 = odeint(f, y0, t, args=(I,))
     plt.plot(t, yt1[:,0], label=I)
@@ -514,23 +343,21 @@ plt.tick_params(axis='x', which='major', labelsize=20)
 plt.tick_params(axis='y', which='major', labelsize=20)
 plt.legend()
 plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+#plt.savefig(f'RMD g={g_}.png')
 plt.show()
-#plt.savefig(f'RMD_pheno_CI-40 g={g_}.png')
 plt.clf()
 
-#tracer le potentiel de RIM
-    for I in Istim:
-        yt2 = odeint(f,y0,t,args=(I,))
-        plt.plot(t,yt2[:,1],label=I)
+for I in Istim: 
+    yt2 = odeint(f, y0, t, args=(I,))
+    plt.plot(t, yt2[:,16], label=I)    
 
-    plt.xlabel(r"$t\;$(ms)",fontsize=20)
-    plt.ylabel(r"$V(t)\;$(mV)",fontsize=20)
-    plt.title('Neurone RIM',fontsize=35)
-    plt.tick_params(axis='x', which='major', labelsize=20)
-    plt.tick_params(axis='y', which='major', labelsize=20)
-    plt.legend()
-    plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
-    #plt.show()
-    #plt.savefig(f'RIM_pheno_CI-40 g={g_}.png')
-    plt.clf()
-"""
+plt.xlabel(r"$t\;$(ms)",fontsize=20)
+plt.ylabel(r"$V(t)\;$(mV)",fontsize=20)
+plt.title('Neurone RIM',fontsize=35)
+plt.tick_params(axis='x', which='major', labelsize=20)
+plt.tick_params(axis='y', which='major', labelsize=20)
+plt.legend()
+plt.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+plt.savefig(f'RIM_variation_gL+gL_RMD g={g_L_rim}.png')
+#plt.show()
+plt.clf()
