@@ -9,10 +9,8 @@ import sympy as sp
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from scipy.optimize import curve_fit
-from sklearn.linear_model import LinearRegression
 
 # PARAMETRES
-
 # Capacitance 
 C = 1.2
 
